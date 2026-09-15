@@ -10,30 +10,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`gdscript-advanced` recommended an API that does not exist**
   ([#17](https://github.com/jame581/GodotPrompter/issues/17)). The "Async pitfalls" fix for a
-  signal that may never fire was `await Signal.any([...])`. There is no `Signal.any()` in any
-  released Godot, only an open proposal (godot-proposals#13597), so the example has failed to
-  parse since v1.7.0. It is replaced by a race that sends both signals to one the node owns, and
-  it was run on 4.7.2 for three cases: the signal fires first, the signal never fires, and a
-  stale timer from an earlier wait. The two other traps in the section came from the same
-  unexecuted plan and were wrong too. Trap 1 blamed `await` in `_ready` for child ready order,
-  but children are always ready first; the real problem is that the first `await` emits `ready`
-  before setup finishes. Trap 3 said a freed awaiter crashes and pointed to `ToSignal()`, which
-  exists only in C#. In fact the coroutine is dropped silently, and the actual hazard is a
-  reference freed during the wait. Both traps are rewritten to match what 4.7.2 does.
+  signal that may never fire was `await Signal.any([...])`. No released Godot has `Signal.any()`
+  or any other built-in way to await several signals at once; godot-proposals#13597 proposes
+  global `any()`/`all()` functions but is not implemented. The example has failed to load with a
+  parse error since v1.7.0. It is replaced by a race that sends both signals to one the node
+  owns. That race was run on 4.7.2 for four cases: the signal fires first, the signal never
+  fires, a stale timer is left from an earlier wait, and the watched node is freed mid-wait. The
+  two other traps in the section came from the same unexecuted plan and were wrong too. Trap 1
+  blamed `await` in `_ready` for child ready order, but children are always ready first; the
+  real problem is that the first `await` emits `ready` before setup finishes. Trap 3 said a freed
+  awaiter crashes and pointed to `ToSignal()`, which exists only in C#. In fact the coroutine is
+  dropped silently, and the actual hazard is a reference freed during the wait. Both traps are
+  rewritten to match what 4.7.2 does. The skill's "Common pitfalls" section also had lambda
+  capture backwards: it said loop lambdas all print the final value, when they print `0..4`.
+  Locals are captured by value, and the real trap is that reassigning one inside a lambda never
+  reaches the outer variable.
 - **Skills told agents to save plans to `docs/godot-prompter/plans/`**
   ([#19](https://github.com/jame581/GodotPrompter/issues/19)). `using-godot-prompter` stated it
   as fact, and Codex and Antigravity import that skill in full, so it competed with a project's
   own `AGENTS.md` rule and often won. `godot-brainstorming` repeated it. GodotPrompter no longer
-  chooses a location. Plans go where the user's instructions, the planning skill, or an existing
-  plans directory say; if none applies, the agent asks and suggests `docs/plans/`.
+  chooses a location. Plans go where the user's instructions or agent instructions file say,
+  then the planning skill's convention, then an existing plans directory. If none applies, the
+  agent asks and suggests `docs/plans/`, or uses `docs/plans/` when it cannot ask (a subagent or
+  non-interactive run). Per-scene designs stay next to the scene, as `godot-brainstorming`
+  describes.
 
 ### Added
 
 - **`gdscript-nonexistent-api` validator rule.** An error, so it fails CI, for APIs caught being
   invented in ```` ```gdscript ```` examples: `Signal.any()`, `Signal.all()`, and the C#-only
-  `ToSignal()`. It scans `SKILL.md` and `references/*.md`. Prose is not scanned, because saying
-  an API does not exist is exactly the guidance that keeps an agent away from it. The rule only
-  catches APIs already on the list; it cannot prove that an API exists.
+  `ToSignal()`. It scans `SKILL.md` and `references/*.md` line by line and reports the offending
+  line. Code comments inside the block count; prose is not scanned, because saying an API does
+  not exist is exactly the guidance that keeps an agent away from it. The rule only catches APIs
+  already on the list; it cannot prove that an API exists.
 
 ## [1.13.2] - 2026-08-12
 

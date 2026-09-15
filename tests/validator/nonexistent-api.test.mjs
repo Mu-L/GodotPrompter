@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runValidator } from './run-validator.mjs';
+import { runValidator, SKILL_BODY_FIRST_LINE } from './run-validator.mjs';
 
 const gd = code => `\`\`\`gdscript\n${code}\n\`\`\``;
 const cs = code => `\`\`\`csharp\n${code}\n\`\`\``;
@@ -46,6 +46,51 @@ test('ToSignal() in a C# block is correct usage and not flagged', () => {
   });
   assert.doesNotMatch(stdout, /gdscript-nonexistent-api/);
   assert.equal(code, 0);
+});
+
+// The finding names the offending line, so two hits in one file are distinguishable and findable.
+test('every fence is scanned, and the error names the offending line', () => {
+  const body = ['## Async', '', gd('var ok := 1'), '', gd('await Signal.any([a.done])')].join('\n');
+  // '## Async', '', '```gdscript', 'var ok := 1', '```', '', '```gdscript', <hit>
+  const hitLine = SKILL_BODY_FIRST_LINE + 7;
+  const { stdout, code } = runValidator({ skillBody: body });
+  assert.match(stdout, new RegExp(`gdscript-nonexistent-api\\] skills/fixture-skill/SKILL\\.md: line ${hitLine}:`));
+  assert.equal(code, 1);
+});
+
+// A fence opener mentioned mid-sentence is prose, not a fence. A regex that pairs ``` markers
+// across the file starts there, swallows the real opener as its closer, and skips the real block.
+test('an inline ```gdscript mention in prose does not hide the next real fence', () => {
+  const body = ['## Async', '', 'Tag examples with ```gdscript so they highlight.', '', gd('await Signal.any([a.done])')].join('\n');
+  const { stdout, code } = runValidator({ skillBody: body });
+  assert.match(stdout, /gdscript-nonexistent-api/);
+  assert.equal(code, 1);
+});
+
+test('fences indented inside a list item are scanned', () => {
+  const body = ['## Async', '', '1. Race it:', '', '   ```gdscript', '   await Signal.any([a.done])', '   ```'].join('\n');
+  const { stdout, code } = runValidator({ skillBody: body });
+  assert.match(stdout, /gdscript-nonexistent-api/);
+  assert.equal(code, 1);
+});
+
+test('CRLF files are scanned', () => {
+  const { stdout, code } = runValidator({
+    skillBody: `## Async\n\n${gd('await Signal.any([a.done])')}`,
+    crlf: true,
+  });
+  assert.match(stdout, /gdscript-nonexistent-api/);
+  assert.equal(code, 1);
+});
+
+// Pinned deliberately: comments are code-block content. Negative guidance belongs in prose, where
+// the next test shows it is allowed.
+test('a denylisted name inside a GDScript comment is still flagged', () => {
+  const { stdout, code } = runValidator({
+    skillBody: `## Async\n\n${gd('# no Signal.any() in released Godot\nawait timer.timeout')}`,
+  });
+  assert.match(stdout, /gdscript-nonexistent-api/);
+  assert.equal(code, 1);
 });
 
 // Saying the API does not exist is exactly the guidance that stops an agent reaching for it.

@@ -17,7 +17,7 @@ You're past `gdscript-patterns` when:
 
 - You're hitting a profiler bottleneck and need to know which idioms are fast
 - You're writing editor tools and need `@tool` lifecycle correctness
-- You're seeing `await` deadlocks or `Callable` lifetime bugs
+- You're seeing coroutines that never resume or `Callable` lifetime bugs
 - You need metaprogramming (calling functions by name, dynamic dispatch) without footguns
 - You're shipping a real game and want to avoid the patterns that look fine but break under load
 
@@ -150,7 +150,7 @@ func _ready() -> void:
     inventory = load_inventory()
 ```
 
-Fix: finish everything other nodes read at ready time before the first `await`. If part of setup genuinely has to wait, emit a signal such as `initialized` when it completes and have dependents await that instead of relying on `ready`.
+Fix: finish everything other nodes read at ready time before the first `await`. If part of setup genuinely has to wait, set an `is_initialized` flag and emit an `initialized` signal when it completes. Dependents check the flag before awaiting, because awaiting a signal that already fired never resumes (Trap 2).
 
 **Trap 2 — Awaiting a signal that never fires** suspends the coroutine forever:
 
@@ -159,7 +159,7 @@ Fix: finish everything other nodes read at ready time before the first `await`. 
 await health.health_changed
 ```
 
-Fix: check the precondition before awaiting. When you do need to wait, race the signal against a timeout. Released Godot has no `Signal.any()` (it is only a proposal, godot-proposals#13597), so funnel both signals into one you own:
+Fix: check the precondition before awaiting. When you do need to wait, race the signal against a timeout. Released Godot has no `Signal.any()` and no other built-in way to await several signals at once (godot-proposals#13597 proposes global `any()`/`all()`), so funnel both signals into one you own:
 
 ```gdscript
 signal _health_wait_finished(changed: bool)
@@ -171,7 +171,8 @@ func wait_for_health_change(timeout_sec: float) -> bool:
     health.health_changed.connect(on_changed)
     timer.timeout.connect(on_timeout)
     var changed: bool = await _health_wait_finished
-    health.health_changed.disconnect(on_changed)
+    if is_instance_valid(health):  # freed while we waited (see Trap 3)
+        health.health_changed.disconnect(on_changed)
     timer.timeout.disconnect(on_timeout)  # or a stale timer ends the next wait early
     return changed
 ```
@@ -223,19 +224,24 @@ Open the **Debugger → Profiler** panel. The patterns that show up most often:
 
 ## 8. Common pitfalls
 
-**Lambda captures by reference** — the lambda sees the *current* value of captured vars, not the value at definition time:
+**Lambdas capture locals by value** — once, when the lambda is created. Loop lambdas therefore each keep their own `i`, and no `bind` is needed. The trap runs the other way: assigning a captured local changes only the lambda's copy, which starts from the captured value again on the next call:
 
 ```gdscript
-var callbacks: Array[Callable] = []
-for i in 5:
-    callbacks.append(func(): print(i))  # all five print 5 (or 4 — depends on engine)
+var count := 0
+var bump := func() -> int:
+    count += 1  # CONFUSABLE_CAPTURE_REASSIGNMENT warning
+    return count
+bump.call()  # 1
+bump.call()  # 1 again, and `count` out here is still 0
 ```
 
-Fix: capture by `bind`:
+Fix: keep shared state in a member variable or a reference type — an `Array`, `Dictionary` or object is captured as the same instance:
 
 ```gdscript
-for i in 5:
-    callbacks.append((func(idx): print(idx)).bind(i))
+var state := {"count": 0}
+var bump := func() -> int:
+    state.count += 1
+    return state.count  # 1, then 2
 ```
 
 **`@onready` ordering** — `@onready` vars are set after `_init` but before `_ready`. Children's `_ready` runs before parent's `_ready`. So:
@@ -273,4 +279,4 @@ func move_point() -> void:
 - [ ] Audit `await` calls for signals that may never fire, `_ready` returning before setup finishes, and references freed during the wait
 - [ ] Pick signal vs Callable per the trade-off table; disconnect lambdas in `_exit_tree`
 - [ ] Profile before optimizing; match the hot-spot to the table in section 7
-- [ ] Audit lambda captures, `@onready` ordering, static var lifecycle, Resource sharing, and packed-array property setters (Godot 4.7) for the listed pitfalls
+- [ ] Audit lambdas that assign captured locals (the change never escapes the lambda), `@onready` ordering, static var lifecycle, Resource sharing, and packed-array property setters (Godot 4.7) for the listed pitfalls

@@ -137,7 +137,7 @@ Load `godot-prompter:godot-code-review` to review the code against Godot-specifi
 - **godot-tools-engineer** — Editor plugins, custom inspectors, gizmos, `@tool` scripts, plugin distribution
 
 ### Plan Storage
-GodotPrompter has no plans folder of its own. Save plans and design docs where this project already keeps them, checking in order: the user's instructions and the project's agent instructions file (`CLAUDE.md`, `AGENTS.md`, …); the active planning skill's own convention; an existing plans or specs directory in the repo. If none applies, ask the user, suggesting `docs/plans/`.
+GodotPrompter has no plans folder of its own. Save implementation plans where this project keeps them, checking in order: the user's instructions or the project's agent instructions file (`CLAUDE.md`, `AGENTS.md`, …); then the planning skill's convention; then an existing plans directory. If none applies, ask the user, suggesting `docs/plans/`, or use `docs/plans/` when you cannot ask (a subagent or non-interactive run). Per-scene designs from `godot-brainstorming` stay next to the scene, in the root script's comment block or a `DESIGN.md`.
 
 ## Platform Adaptation
 

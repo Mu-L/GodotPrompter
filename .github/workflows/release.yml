@@ -42,8 +42,9 @@ jobs:
       - name: Run hook tests
         run: npm run test:hooks
 
-      # The parity-exemption marker records an ERROR when its reason is missing, and the validator
-      # exits non-zero on any error — so a malformed marker fails the release tag itself. Gate it.
+      # Two content rules record ERRORs: a parity-exemption marker with no reason, and a GDScript
+      # example using a known-nonexistent API. The validator exits non-zero on any error, so either
+      # fails the release tag itself. Gate their tests.
       - name: Run validator tests
         run: npm run test:validator
 

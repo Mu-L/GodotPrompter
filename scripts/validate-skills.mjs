@@ -203,23 +203,34 @@ function isLanguagePartitioned(sections) {
 // onward, and it never parsed in any Godot release. This cannot prove an API exists — only that a
 // known-bad one has not come back.
 //
-// Only ```gdscript fences are scanned. Prose saying an API does not exist is precisely the
-// guidance that stops an agent reaching for it, and `ToSignal()` is correct inside ```csharp.
+// Only ```gdscript fences are scanned — comments inside them included. Prose saying an API does not
+// exist is precisely the guidance that stops an agent reaching for it, and `ToSignal()` is correct
+// inside ```csharp.
 const NONEXISTENT_GDSCRIPT_APIS = [
-  { re: /\bSignal\.(?:any|all)\s*\(/, hint: 'not in any released Godot 4.x (godotengine/godot-proposals#13597) — race the signals with lambdas and a timer instead' },
+  { re: /\bSignal\.(?:any|all)\s*\(/, hint: 'no released Godot 4.x can await several signals at once (godotengine/godot-proposals#13597 proposes global any()/all()) — race the signals with lambdas and a timer instead' },
   { re: /\bToSignal\s*\(/, hint: 'C#-only — GDScript awaits the signal directly: `await obj.signal_name`' },
 ];
 
+// Line-based, like maskFencedBlocks: a fence is a line that STARTS with ``` (indentation allowed).
+// Pairing ``` markers across the whole text instead lets a mid-sentence "```gdscript" in prose open a
+// phantom block that swallows the real opener as its closer, so the real block is never scanned.
 function validateGdscriptApis(content, path) {
-  for (const fence of content.matchAll(/```gdscript\b[^\n]*\n([\s\S]*?)```/g)) {
+  let fenceLang = null;  // language of the open fence, or null outside one
+  content.split(/\r?\n/).forEach((line, i) => {
+    const fence = line.match(/^\s*```\s*([\w#+-]*)/);
+    if (fence) {
+      fenceLang = fenceLang === null ? fence[1].toLowerCase() : null;
+      return;
+    }
+    if (fenceLang !== 'gdscript') return;
     for (const { re, hint } of NONEXISTENT_GDSCRIPT_APIS) {
-      const hit = fence[1].match(re);
+      const hit = line.match(re);
       if (hit) {
         record(errors, path, 'gdscript-nonexistent-api',
-          `GDScript example uses ${hit[0].replace(/\s*\($/, '()')}: ${hint}`);
+          `line ${i + 1}: GDScript example uses ${hit[0].replace(/\s*\($/, '()')}: ${hint}`);
       }
     }
-  }
+  });
 }
 
 function validateSkill({ name, path }) {
@@ -394,19 +405,6 @@ function validateOrphanReferences() {
 }
 validateOrphanReferences();
 
-// Pattern X moves examples into references/, so the nonexistent-API rule has to follow them there.
-function validateReferenceApis() {
-  for (const t of targets) {
-    const refsDir = join(t.path.replace(/[\\/]SKILL\.md$/, ''), 'references');
-    if (!existsSync(refsDir)) continue;
-    for (const ref of readdirSync(refsDir).filter(n => n.endsWith('.md'))) {
-      const refPath = join(refsDir, ref);
-      validateGdscriptApis(readFileSync(refPath, 'utf8'), refPath);
-    }
-  }
-}
-validateReferenceApis();
-
 // C#-parity check for skills/<name>/references/*.md.
 //
 // Pattern X moves overflow out of SKILL.md into references/, which used to remove that content
@@ -427,6 +425,9 @@ function validateReferenceParity() {
     for (const ref of readdirSync(refsDir).filter(n => n.endsWith('.md'))) {
       const refPath = join(refsDir, ref);
       const body = readFileSync(refPath, 'utf8');
+      // Pattern X moves examples here, so the nonexistent-API rule rides this walk too — before any
+      // of the parity `continue`s below, which must not skip it.
+      validateGdscriptApis(body, refPath);
       const sections = splitReferenceSections(body);
 
       // A few references carry no headings below the H1 at all, so there is nothing to section.

@@ -346,6 +346,7 @@ The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` a
 | `card-empty` | The card region is non-empty — otherwise the hook would inject nothing while CI stayed green | error |
 | `card-oversized` | The card region is ≤ 3 KB — it is injected on every session start *and* every compaction | error |
 | `card-skill-missing` | Every skill named in `CARD_SPECS` exists, so deleting one fails CI instead of silently skipping its check | error |
+| `gdscript-nonexistent-api` | No GDScript code block in a `SKILL.md` or `references/*.md` uses an API already caught being invented: `Signal.any()` / `Signal.all()`, or the C#-only `ToSignal()`. Prose is not scanned. It is a denylist, so it cannot prove an API exists | error |
 
 Hook behaviour is covered separately by `npm run test:hooks` (22 cases), which also runs on release tags.
 

@@ -29,7 +29,12 @@ function writeCardStub(dir, name, marker) {
   ].join('\n'));
 }
 
-export function runValidator({ skillBody = '', referenceBody = null }) {
+// SKILL.md lines that precede `skillBody` when there is no reference file, so a test can name the
+// line a finding should point at: skillBody's first line is SKILL_BODY_FIRST_LINE.
+export const SKILL_BODY_FIRST_LINE = 10;
+
+// `crlf: true` writes every fixture file with CRLF endings, as a Windows checkout would.
+export function runValidator({ skillBody = '', referenceBody = null, crlf = false }) {
   const dir = mkdtempSync(join(tmpdir(), 'gp-val-'));
   const skillDir = join(dir, 'skills', 'fixture-skill');
   mkdirSync(skillDir, { recursive: true });
@@ -37,8 +42,9 @@ export function runValidator({ skillBody = '', referenceBody = null }) {
   cpSync(SCRIPT, join(dir, 'scripts', 'validate-skills.mjs'));
   writeCardStub(dir, 'using-godot-prompter', 'SESSION-CARD');
   writeCardStub(dir, 'godot-mentor', 'MENTOR-CARD');
+  const write = (path, text) => writeFileSync(path, crlf ? text.replace(/\r?\n/g, '\r\n') : text);
 
-  writeFileSync(join(skillDir, 'SKILL.md'), [
+  write(join(skillDir, 'SKILL.md'), [
     '---', 'name: fixture-skill', 'description: Use when testing the validator — fixture.', '---',
     '', '# Fixture Skill', '', '**Related skills:** none.', '',
     skillBody, '', '## Checklist', '', '- [ ] done', '',
@@ -46,9 +52,9 @@ export function runValidator({ skillBody = '', referenceBody = null }) {
 
   if (referenceBody !== null) {
     mkdirSync(join(skillDir, 'references'), { recursive: true });
-    writeFileSync(join(skillDir, 'references', 'topic.md'), `# Topic\n\n${referenceBody}\n`);
+    write(join(skillDir, 'references', 'topic.md'), `# Topic\n\n${referenceBody}\n`);
     // Linked from SKILL.md, or orphan-reference fires and muddies the output.
-    writeFileSync(join(skillDir, 'SKILL.md'), [
+    write(join(skillDir, 'SKILL.md'), [
       '---', 'name: fixture-skill', 'description: Use when testing the validator — fixture.', '---',
       '', '# Fixture Skill', '', '**Related skills:** none.', '',
       'See [Topic](references/topic.md).', '', skillBody, '', '## Checklist', '', '- [ ] done', '',
