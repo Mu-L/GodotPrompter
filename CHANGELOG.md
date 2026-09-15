@@ -34,6 +34,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   agent asks and suggests `docs/plans/`, or uses `docs/plans/` when it cannot ask (a subagent or
   non-interactive run). Per-scene designs stay next to the scene, as `godot-brainstorming`
   describes.
+- **Three more skills taught the same async and lambda mistakes.** Every replacement below was
+  run on 4.7.2.
+  - `gdscript-patterns`: its closure example claimed a counter returns 1 then 2. A captured
+    `int` returns 1 on every call, so the counter now keeps its state in a `Dictionary`. Its
+    "Coroutine Safety" example, pitfalls table and checklist recommended `is_instance_valid(self)`
+    after `await`. That check never fires, because a freed node's coroutine never resumes, so the
+    guard now protects the other node the coroutine uses. The table also said loop variables are
+    captured by reference.
+  - `godot-code-review`: said a timer "fires on a freed node, causing errors". Nothing fires; the
+    code after the `await` silently never runs.
+  - `godot-debugging` (`references/signal-tracing.md`): guarded a lambda with
+    `is_instance_valid(self)`. A lambda's connection is removed when its creator is freed, so the
+    guard never fails. It now connects the target's own method, a connection that is removed with
+    the target. Guarding a captured node inside a lambda instead still logs "Lambda capture at
+    index 0 was freed" on every emit. The C# counterparts were not changed; their delegate
+    lifetime rules differ and were not verified.
 
 ### Added
 

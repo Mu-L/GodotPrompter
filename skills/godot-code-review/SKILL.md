@@ -443,7 +443,7 @@ private void OnEnemyDied()
 
 | Pattern | Problem | Fix |
 |---|---|---|
-| `await get_tree().create_timer(t).timeout` after `queue_free()` | Timer signal fires on a freed node, causing errors | Check `is_instance_valid(self)` after `await`, or use `create_tween()` which auto-stops |
+| `await get_tree().create_timer(t).timeout` after `queue_free()` (GDScript) | The freed node's coroutine is dropped silently: no error, and nothing after the `await` runs, so `is_instance_valid(self)` there never fires | Do must-run work before `queue_free()`; re-check *other* nodes with `is_instance_valid()` after `await`; use `create_tween()` for effects that should die with the node |
 | Fragile node paths like `$A/B/C/D/E` | Breaks silently when the scene tree is reorganized | Refactor to direct children + signals, or export a `NodePath` |
 | `call_deferred()` used everywhere | Defers are appropriate for cross-frame safety, not a general solution; overuse hides real design issues | Only defer when crossing physics/main thread boundaries or breaking a call cycle |
 | `set_physics_process(true)` called inside `_physics_process()` | Redundant call every frame; wastes CPU | Call once at the point you actually want to enable/disable processing |

@@ -117,12 +117,11 @@ func _exit_tree() -> void:
     if health_component.is_connected("health_changed", _on_health_changed):
         health_component.disconnect("health_changed", _on_health_changed)
 
-# Lambdas can capture 'self' — if self is freed the lambda may call invalid memory
-# Prefer named methods or guard with is_instance_valid()
-some_node.some_signal.connect(func(): 
-    if is_instance_valid(self):
-        _do_work()
-)
+# A lambda's connection is removed when the object that created it is freed, so it
+# never runs on a freed `self`. The risk is a captured node freed first: every emit
+# logs "Lambda capture at index 0 was freed". Connect the target's own method instead;
+# that connection is removed when the target is freed.
+some_node.some_signal.connect(target.do_work)
 ```
 
 ```csharp

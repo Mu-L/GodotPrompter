@@ -162,18 +162,20 @@ get_tree().create_timer(2.0).timeout.connect(_on_delayed_action)
 ### Coroutine Safety
 
 ```gdscript
-# DANGER: node may be freed while awaiting
-func unsafe_coroutine() -> void:
+# DANGER: `target` may be freed while this coroutine waits
+func unsafe_coroutine(target: Node2D) -> void:
     await get_tree().create_timer(5.0).timeout
-    position = Vector2.ZERO  # crash if node was freed during wait!
+    target.position = Vector2.ZERO  # error: previously freed instance
 
-# SAFE: check validity after await
-func safe_coroutine() -> void:
+# SAFE: re-check other objects after every await
+func safe_coroutine(target: Node2D) -> void:
     await get_tree().create_timer(5.0).timeout
-    if not is_instance_valid(self):
+    if not is_instance_valid(target):
         return
-    position = Vector2.ZERO
+    target.position = Vector2.ZERO
 ```
+
+A freed node's own coroutine never resumes, so `is_instance_valid(self)` after `await` guards nothing.
 
 ---
 
@@ -242,12 +244,14 @@ items.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["value"] 
 
 ### Closures (Capturing Variables)
 
+Locals are captured by value, so a captured `int` counter returns 1 on every call. Share state through a reference type:
+
 ```gdscript
 func create_counter(start: int) -> Callable:
-    var count := start
+    var state := {"count": start}  # shared, so changes persist
     return func() -> int:
-        count += 1
-        return count
+        state.count += 1
+        return state.count
 
 var counter := create_counter(0)
 print(counter.call())  # 1
@@ -413,8 +417,8 @@ The recurring small patterns: ternary expressions (`value if cond else other`), 
 | Symptom | Cause | Fix |
 |---------------------------------------|----------------------------------------------|------------------------------------------------------------------|
 | `as` cast silently returns `null` | Type mismatch — `as` doesn't error | Use `is` check first, then cast |
-| Await never resumes | Signal never emitted, or node freed | Check `is_instance_valid(self)` after await; ensure signal fires |
-| Lambda captures stale variable | Loop variable captured by reference | Copy to local var before lambda: `var local := i` |
+| Await never resumes | Signal never emitted, or this node was freed (coroutine dropped) | Check the condition before awaiting; race slow signals against a timer |
+| Lambda's change to a variable is lost | Locals are captured by value | Keep shared state in a member, `Array` or `Dictionary` |
 | `UNTYPED_DECLARATION` warnings flood | Warning enabled but codebase isn't typed | Type incrementally; use `@warning_ignore` for legacy code |
 | Typed array rejects valid items | Item type doesn't match exactly | Ensure items match the declared type (no implicit upcasting) |
 | `@onready` is `null` | Accessed before `_ready()` runs | Never access `@onready` vars in `_init()` or variable declarations |
@@ -448,7 +452,7 @@ The `@abstract` annotation prevents direct instantiation of a class and forces s
 
 - [ ] All variables, parameters, and return types have explicit type hints
 - [ ] Typed arrays (`Array[Type]`) are used instead of untyped `Array` where possible
-- [ ] `await` calls are followed by `is_instance_valid(self)` checks when the node could be freed
+- [ ] Other nodes used after an `await` are re-checked with `is_instance_valid()` (`self` needs no check)
 - [ ] Lambdas connected to signals are simple — complex logic goes in named methods
 - [ ] `match` statements include a `_:` default branch
 - [ ] `@export` variables use appropriate hints (`@export_range`, `@export_enum`, etc.)
