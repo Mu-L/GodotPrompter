@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "test:hooks": "node --test tests/hooks/session-start.test.mjs",
-    "test:validator": "node --test tests/validator/parity-exemption.test.mjs",
+    "test:validator": "node --test tests/validator/parity-exemption.test.mjs tests/validator/nonexistent-api.test.mjs",
     "test": "npm run test:hooks && npm run test:validator",
     "validate": "node scripts/validate-skills.mjs"
   },

@@ -138,36 +138,56 @@ func _notification(what: int) -> void:
 
 ## 5. Async pitfalls
 
-`await` is sugar over signal-yielding. It has three trap shapes:
+`await` suspends the function and hands control back to its caller until the signal fires. It has three trap shapes:
 
-**Trap 1 — `await` in `_ready`** delays children's ready order:
+**Trap 1 — `await` in `_ready`** returns early, so the node reports ready before it is initialized:
 
 ```gdscript
-# BAD: children of this node ready BEFORE this _ready() finishes
+# BAD: the first await returns control, so `ready` is emitted and the parent's
+# _ready() runs while `inventory` is still empty
 func _ready() -> void:
     await get_tree().create_timer(1.0).timeout
-    initialize_children()  # children already ready'd against an uninitialized parent
+    inventory = load_inventory()
 ```
 
-Fix: do not `await` in `_ready`. Move the await to a separate setup function.
+Fix: finish everything other nodes read at ready time before the first `await`. If part of setup genuinely has to wait, emit a signal such as `initialized` when it completes and have dependents await that instead of relying on `ready`.
 
-**Trap 2 — Awaiting a signal that never fires** deadlocks the calling coroutine:
+**Trap 2 — Awaiting a signal that never fires** suspends the coroutine forever:
 
 ```gdscript
 # BAD if `health_changed` never fires (e.g., entity already at full HP)
 await health.health_changed
 ```
 
-Fix: use a timeout race:
+Fix: check the precondition before awaiting. When you do need to wait, race the signal against a timeout. Released Godot has no `Signal.any()` (it is only a proposal, godot-proposals#13597), so funnel both signals into one you own:
 
 ```gdscript
-var timer := get_tree().create_timer(2.0)
-var winner := await Signal.any([health.health_changed, timer.timeout])
+signal _health_wait_finished(changed: bool)
+
+func wait_for_health_change(timeout_sec: float) -> bool:
+    var timer := get_tree().create_timer(timeout_sec)
+    var on_changed := func(_hp: int) -> void: _health_wait_finished.emit(true)
+    var on_timeout := func() -> void: _health_wait_finished.emit(false)
+    health.health_changed.connect(on_changed)
+    timer.timeout.connect(on_timeout)
+    var changed: bool = await _health_wait_finished
+    health.health_changed.disconnect(on_changed)
+    timer.timeout.disconnect(on_timeout)  # or a stale timer ends the next wait early
+    return changed
 ```
 
-(Or check the precondition before awaiting.)
+The lambdas emit a signal rather than set a local flag: GDScript lambdas capture locals **by value**, so `changed = true` inside one never reaches the outer variable. Every awaiter of `_health_wait_finished` resumes on the first emit, so run one wait at a time per node.
 
-**Trap 3 — `Callable` referencing a freed object** — when the awaiter is freed mid-await, the resumed coroutine crashes. Use `await ToSignal()` patterns where the engine handles the lifecycle.
+**Trap 3 — Objects freed during the wait.** If the node running the coroutine is freed, the coroutine is dropped silently — no error, and nothing after the `await` (cleanup, a `finished` emit) ever runs. If the node survives but something it references is freed, touching that reference after resuming errors with "previously freed". Re-validate after every `await`:
+
+```gdscript
+func flash(target: Node2D) -> void:
+    target.modulate = Color.RED
+    await get_tree().create_timer(0.2).timeout
+    if not is_instance_valid(target):  # freed while we waited
+        return
+    target.modulate = Color.WHITE
+```
 
 ## 6. Signal vs Callable design choices
 
@@ -250,7 +270,7 @@ func move_point() -> void:
 - [ ] Identify which performance idiom applies (typed vectors, PackedArray, static methods)
 - [ ] If using metaprogramming, allowlist all dynamic method names
 - [ ] If `@tool`, guard editor vs runtime branches with `Engine.is_editor_hint()`
-- [ ] Audit `await` calls for deadlock risk (signal that may not fire) and `_ready` ordering bugs
+- [ ] Audit `await` calls for signals that may never fire, `_ready` returning before setup finishes, and references freed during the wait
 - [ ] Pick signal vs Callable per the trade-off table; disconnect lambdas in `_exit_tree`
 - [ ] Profile before optimizing; match the hot-spot to the table in section 7
 - [ ] Audit lambda captures, `@onready` ordering, static var lifecycle, Resource sharing, and packed-array property setters (Godot 4.7) for the listed pitfalls

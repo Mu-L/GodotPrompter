@@ -198,8 +198,33 @@ function isLanguagePartitioned(sections) {
   });
 }
 
+// Nonexistent-API rule (error — fails CI): a denylist of APIs we have caught being invented in
+// GDScript examples. Issue #17: gdscript-advanced shipped `await Signal.any([...])` from v1.7.0
+// onward, and it never parsed in any Godot release. This cannot prove an API exists — only that a
+// known-bad one has not come back.
+//
+// Only ```gdscript fences are scanned. Prose saying an API does not exist is precisely the
+// guidance that stops an agent reaching for it, and `ToSignal()` is correct inside ```csharp.
+const NONEXISTENT_GDSCRIPT_APIS = [
+  { re: /\bSignal\.(?:any|all)\s*\(/, hint: 'not in any released Godot 4.x (godotengine/godot-proposals#13597) — race the signals with lambdas and a timer instead' },
+  { re: /\bToSignal\s*\(/, hint: 'C#-only — GDScript awaits the signal directly: `await obj.signal_name`' },
+];
+
+function validateGdscriptApis(content, path) {
+  for (const fence of content.matchAll(/```gdscript\b[^\n]*\n([\s\S]*?)```/g)) {
+    for (const { re, hint } of NONEXISTENT_GDSCRIPT_APIS) {
+      const hit = fence[1].match(re);
+      if (hit) {
+        record(errors, path, 'gdscript-nonexistent-api',
+          `GDScript example uses ${hit[0].replace(/\s*\($/, '()')}: ${hint}`);
+      }
+    }
+  }
+}
+
 function validateSkill({ name, path }) {
   const content = readFileSync(path, 'utf8');
+  validateGdscriptApis(content, path);
   const { data, body } = parseFrontmatter(content);
 
   if (!data) {
@@ -368,6 +393,19 @@ function validateOrphanReferences() {
   }
 }
 validateOrphanReferences();
+
+// Pattern X moves examples into references/, so the nonexistent-API rule has to follow them there.
+function validateReferenceApis() {
+  for (const t of targets) {
+    const refsDir = join(t.path.replace(/[\\/]SKILL\.md$/, ''), 'references');
+    if (!existsSync(refsDir)) continue;
+    for (const ref of readdirSync(refsDir).filter(n => n.endsWith('.md'))) {
+      const refPath = join(refsDir, ref);
+      validateGdscriptApis(readFileSync(refPath, 'utf8'), refPath);
+    }
+  }
+}
+validateReferenceApis();
 
 // C#-parity check for skills/<name>/references/*.md.
 //

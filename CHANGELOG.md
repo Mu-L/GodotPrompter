@@ -4,6 +4,31 @@ All notable changes to GodotPrompter will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`gdscript-advanced` recommended an API that does not exist**
+  ([#17](https://github.com/jame581/GodotPrompter/issues/17)). The "Async pitfalls" fix for a
+  signal that may never fire was `await Signal.any([...])`. There is no `Signal.any()` in any
+  released Godot, only an open proposal (godot-proposals#13597), so the example has failed to
+  parse since v1.7.0. It is replaced by a race that sends both signals to one the node owns, and
+  it was run on 4.7.2 for three cases: the signal fires first, the signal never fires, and a
+  stale timer from an earlier wait. The two other traps in the section came from the same
+  unexecuted plan and were wrong too. Trap 1 blamed `await` in `_ready` for child ready order,
+  but children are always ready first; the real problem is that the first `await` emits `ready`
+  before setup finishes. Trap 3 said a freed awaiter crashes and pointed to `ToSignal()`, which
+  exists only in C#. In fact the coroutine is dropped silently, and the actual hazard is a
+  reference freed during the wait. Both traps are rewritten to match what 4.7.2 does.
+
+### Added
+
+- **`gdscript-nonexistent-api` validator rule.** An error, so it fails CI, for APIs caught being
+  invented in ```` ```gdscript ```` examples: `Signal.any()`, `Signal.all()`, and the C#-only
+  `ToSignal()`. It scans `SKILL.md` and `references/*.md`. Prose is not scanned, because saying
+  an API does not exist is exactly the guidance that keeps an agent away from it. The rule only
+  catches APIs already on the list; it cannot prove that an API exists.
+
 ## [1.13.2] - 2026-08-12
 
 Patch release: one reported defect, four fixes. The SessionStart hook asked repositories that
