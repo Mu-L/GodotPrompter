@@ -4,7 +4,12 @@ All notable changes to GodotPrompter will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.13.3] - 2026-09-15
+
+Patch release: two reported issues, plus the same class of error found in three more skills. A
+GDScript example that has never parsed is fixed, and async and lambda claims that came from an
+unexecuted plan are corrected. Every replacement snippet was run on Godot 4.7.2. Skills also stop
+telling agents where to save plans. No skill was added or removed; there are still 55.
 
 ### Fixed
 
