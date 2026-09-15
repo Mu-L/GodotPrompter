@@ -20,6 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   before setup finishes. Trap 3 said a freed awaiter crashes and pointed to `ToSignal()`, which
   exists only in C#. In fact the coroutine is dropped silently, and the actual hazard is a
   reference freed during the wait. Both traps are rewritten to match what 4.7.2 does.
+- **Skills told agents to save plans to `docs/godot-prompter/plans/`**
+  ([#19](https://github.com/jame581/GodotPrompter/issues/19)). `using-godot-prompter` stated it
+  as fact, and Codex and Antigravity import that skill in full, so it competed with a project's
+  own `AGENTS.md` rule and often won. `godot-brainstorming` repeated it. GodotPrompter no longer
+  chooses a location. Plans go where the user's instructions, the planning skill, or an existing
+  plans directory say; if none applies, the agent asks and suggests `docs/plans/`.
 
 ### Added
 

@@ -37,7 +37,7 @@ After the design is approved:
 
 1. **Offer the agent instructions section** — Ask whether to add the GodotPrompter integration section to the file this project already uses for agent instructions (see Agent Instructions Injection below). It is what tells subagents and future sessions to use GodotPrompter skills. Skip silently if a `## GodotPrompter` section already exists in any of them, or if the user has declined before. Never add it without agreement.
 
-2. **Create implementation plan** — If a planning skill is available (e.g., `superpowers:writing-plans`), use it. If not, break the design into ordered tasks yourself and save to `docs/godot-prompter/plans/` in the user's project.
+2. **Create implementation plan** — If a planning skill is available (e.g., `superpowers:writing-plans`), use it. If not, break the design into ordered tasks yourself and save them where the project already keeps plans — the user's instructions or agent instructions file first, then an existing plans directory. If there is no convention, ask the user, suggesting `docs/plans/`.
 
 3. **Annotate each task with skills** — Every task in the plan that involves a Godot system MUST list which `godot-prompter:*` skill(s) to invoke during implementation. Example:
 

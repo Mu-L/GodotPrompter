@@ -137,7 +137,7 @@ Load `godot-prompter:godot-code-review` to review the code against Godot-specifi
 - **godot-tools-engineer** — Editor plugins, custom inspectors, gizmos, `@tool` scripts, plugin distribution
 
 ### Plan Storage
-Implementation plans and design docs are saved to `docs/godot-prompter/plans/` and `docs/godot-prompter/specs/` in the user's project.
+GodotPrompter has no plans folder of its own. Save plans and design docs where this project already keeps them, checking in order: the user's instructions and the project's agent instructions file (`CLAUDE.md`, `AGENTS.md`, …); the active planning skill's own convention; an existing plans or specs directory in the repo. If none applies, ask the user, suggesting `docs/plans/`.
 
 ## Platform Adaptation
 
