@@ -2,22 +2,34 @@
 
 ## Supported versions
 
-Only the latest release receives fixes. Update to the newest version before reporting.
+Only the latest release receives fixes. Update to it before reporting.
 
-| Version | Supported |
-| ------- | --------- |
-| 1.13.x  | Yes       |
-| < 1.13  | No        |
+| Version        | Supported |
+| -------------- | --------- |
+| Latest release | Yes       |
+| Older releases | No        |
 
 ## Scope
 
-GodotPrompter is mostly Markdown, but some of it runs on your machine:
+GodotPrompter is mostly Markdown, but some of it runs on your machine or shapes what your agent
+does:
 
-- `hooks/` — the SessionStart hook (`session-start`, `run-hook.cmd`) that runs when a supported
-  agent starts a session. It looks for a `project.godot` near the working directory, reads its
-  `config/features` line, and reads a per-project state file under `~/.godot-prompter/state/`
-  that the agent writes when you opt into mentor mode or decline a setup offer.
-- `.opencode/plugins/godot-prompter.js` — the OpenCode plugin entry point.
+- `hooks/` — the SessionStart hook (`session-start`, `run-hook.cmd`, wired in `hooks/hooks.json`).
+  It runs when a session starts, resumes, is cleared, or is compacted, and does nothing outside a
+  Godot project. It writes no files. It reads:
+  - `project.godot`, searched from the working directory up four levels and from the session root
+    down three, for its `config/features` line (engine version, C#);
+  - the project's agent instructions files (`CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`,
+    `AGENTS.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and the `.claude/rules/` and
+    `.cursor/rules/` directories), only to check for a `## GodotPrompter` heading;
+  - a per-project state file under `~/.godot-prompter/state/`.
+
+  Its output is injected into the agent's context. Besides skill routing, it can tell the agent to
+  offer, and only with your agreement, to add a `## GodotPrompter` section to an instructions
+  file, and gives the agent the state file path so it can record a declined offer. The
+  `godot-mentor` skill writes mentor mode to the same file.
+- `.opencode/plugins/godot-prompter.js` — the OpenCode plugin. It adds the `skills/` directory to
+  OpenCode's skill paths and prepends the `using-godot-prompter` skill to the first user message.
 - Agent definitions and manifests (`agents/`, `.codex/`, `.claude-plugin/`, `.cursor-plugin/`,
   `plugin.json`) that configure how host agents load the skills.
 

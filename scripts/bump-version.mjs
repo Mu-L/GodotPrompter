@@ -122,7 +122,7 @@ const inRepoCurrent = inRepoTargets.map(t => ({ ...t, current: getByPath(JSON.pa
 const distinct = [...new Set(inRepoCurrent.map(t => t.current))];
 if (distinct.length > 1) {
   console.error('In-repo version drift detected:');
-  for (const t of inRepoCurrent) console.error(`  ${t.path}: ${t.current}`);
+  for (const t of inRepoCurrent) console.error(`  ${t.path} (${t.key}): ${t.current}`);
   console.error('Fix drift before bumping.');
   process.exit(1);
 }

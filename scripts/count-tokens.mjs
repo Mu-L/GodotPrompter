@@ -35,7 +35,7 @@ if (useTokenizer) {
     countGpt = (text) => gptEnc.encode(text).length;
   } catch (err) {
     console.error('Tokenizer mode requires optional dependencies:');
-    console.error('  npm install @anthropic-ai/tokenizer js-tiktoken');
+    console.error('  npm ci');
     console.error('Falling back to byte-count estimates.');
     countClaude = null;
     countGpt = null;
