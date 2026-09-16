@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   runs with `MARKETPLACE_TOKEN`, which pushes to two other repositories. Both actions are now
   pinned to their v4.4.0 commits, the same code as before, and Dependabot proposes updates once a
   month.
+- **Only the release job can write to the repository.** `contents: write` applied to every job in
+  `release.yml`, including `verify`, which runs the validator and the test suites. The default is
+  now read-only, and only the `release` job, which runs `gh release create`, gets write access.
+  Checkouts no longer leave the token in `.git/config`; no job pushes to this repository with
+  git.
 - **`SECURITY.md`.** It lists the supported versions and the parts that run on a user's machine
   (the SessionStart hook and the OpenCode plugin), and asks for reports through GitHub private
   vulnerability reporting, which is now enabled.
