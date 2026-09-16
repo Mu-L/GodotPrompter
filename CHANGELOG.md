@@ -8,11 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 
-- **Release workflow actions are pinned to commit SHAs.** `release.yml` referenced
-  `actions/checkout@v4` and `actions/setup-node@v4`. A tag can be moved, and the marketplace job
-  runs with `MARKETPLACE_TOKEN`, which pushes to two other repositories. Both actions are now
-  pinned to their v4.4.0 commits, the same code as before, and Dependabot proposes updates once a
-  month.
+- **Workflow actions are pinned to commit SHAs.** `release.yml` referenced `actions/checkout@v4`
+  and `actions/setup-node@v4`. A tag can be moved, and the marketplace job runs with
+  `MARKETPLACE_TOKEN`, which pushes to two other repositories. Every action is now pinned to a full
+  commit SHA, and Dependabot proposes updates once a month.
 - **Only the release job can write to the repository.** `contents: write` applied to every job in
   `release.yml`, including `verify`, which runs the validator and the test suites. The default is
   now read-only, and only the `release` job, which runs `gh release create`, gets write access.
@@ -28,6 +27,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The release workflow runs on Node 26 instead of Node 20.** Node 20 reached end of life on
+  2026-04-30, and GitHub was already forcing the v4 actions onto Node 24 with a deprecation
+  warning. `release.yml` now uses `actions/checkout` v7.0.1 and `actions/setup-node` v7.0.0, which
+  run on Node 24, and installs Node 26 for the validator and tests. Every verify step passes on
+  Node 26. Automatic npm caching is turned off, as setup-node recommends for workflows that hold
+  secrets; the workflow never installs packages.
 - **`package-lock.json` is committed.** It was gitignored, which the scanner reports as unlocked
   dependencies. It covers only the two optional tokenizer packages used by
   `count-tokens.mjs --tokenizer`. `bump-version.mjs` now updates both of its version fields, and

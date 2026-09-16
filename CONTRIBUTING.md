@@ -232,8 +232,8 @@ and a documented example above the real card would silently become the injected 
 
 After any change under `hooks/`, run `npm run test:hooks`; after any change to
 `scripts/validate-skills.mjs`, run `npm run test:validator`. `npm test` runs both. Note that
-`node --test tests/hooks/` does not work on Node 24 — a directory argument is imported as a
-module — so use the npm scripts.
+`node --test tests/hooks/` does not work on Node 24 or later — a directory argument is imported
+as a module — so use the npm scripts. CI runs Node 26.
 
 ### The two hook directories
 
