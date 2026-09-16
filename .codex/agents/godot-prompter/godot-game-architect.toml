@@ -50,7 +50,7 @@ Always read the relevant skill before giving advice. Use skill content, not gene
 
 #model = "gpt-5.4"
 #model_reasoning_effort = "medium"
-#sandbox_mode = "workspace-write" # options are: "read-only", "workspace-write", and "danger-full-access"
+#sandbox_mode = "workspace-write"
 #nickname_candidates = ["Atlas", "Delta", "Echo", "Bob"]
 
 #[mcp_servers.openaiDeveloperDocs]

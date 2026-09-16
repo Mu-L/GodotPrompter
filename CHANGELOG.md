@@ -4,6 +4,33 @@ All notable changes to GodotPrompter will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Security
+
+- **Release workflow actions are pinned to commit SHAs.** `release.yml` referenced
+  `actions/checkout@v4` and `actions/setup-node@v4`. A tag can be moved, and the marketplace job
+  runs with `MARKETPLACE_TOKEN`, which pushes to two other repositories. Both actions are now
+  pinned to their v4.4.0 commits, the same code as before, and Dependabot proposes updates once a
+  month.
+- **`SECURITY.md`.** It lists the supported versions and the parts that run on a user's machine
+  (the SessionStart hook and the OpenCode plugin), and asks for reports through GitHub private
+  vulnerability reporting, which is now enabled.
+- **Plugin security scan in CI.** `plugin-scan.yml` runs the HOL plugin-scanner, the check used by
+  the [awesome-ai-plugins](https://github.com/hashgraph-online/awesome-ai-plugins) listing, on
+  every push to `master` and every pull request. It fails below 80/100 or on any high finding.
+  The repository scored 70 before these changes and scores 100 after them.
+
+### Changed
+
+- **`package-lock.json` is committed.** It was gitignored, which the scanner reports as unlocked
+  dependencies. It covers only the two optional tokenizer packages used by
+  `count-tokens.mjs --tokenizer`. `bump-version.mjs` now updates both of its version fields, and
+  `CONTRIBUTING.md` installs them with `npm ci`.
+- **Codex agent TOMLs no longer list the full-access sandbox mode.** A commented-out template line
+  listed the sandbox modes, and the scanner flags the full-access mode name even inside a comment.
+  No agent set it; the line is only shortened.
+
 ## [1.13.3] - 2026-09-15
 
 Patch release: two reported issues, plus the same class of error found in three more skills. A

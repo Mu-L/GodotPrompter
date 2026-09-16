@@ -35,6 +35,10 @@ const inRepoTargets = [
   // Platform-specific manifests — easily missed before v1.7.1 because they live outside .claude-plugin/.
   { path: resolve(ROOT, '.cursor-plugin/plugin.json'), key: 'version', descKey: 'description' },
   { path: resolve(ROOT, 'plugin.json'), key: 'version', descKey: 'description' },
+  // Committed so the plugin scanner's lockfile check passes. npm stores the root version twice:
+  // top-level, and on the root package entry — `packages[""]`, which "packages..version" addresses.
+  { path: resolve(ROOT, 'package-lock.json'), key: 'version' },
+  { path: resolve(ROOT, 'package-lock.json'), key: 'packages..version' },
 ];
 
 // Sibling marketplaces. Tries each candidate path in order; first existing one wins per label.

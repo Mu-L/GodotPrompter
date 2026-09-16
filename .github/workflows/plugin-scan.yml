@@ -1,0 +1,27 @@
+name: Plugin Security Scan
+
+# HOL plugin-scanner (https://github.com/hashgraph-online/hol-guard) — the scan the
+# awesome-ai-plugins listing runs. Fails below score 80 or on any high/critical finding.
+# It flags risky sandbox/approval setting values in any .md/.json/.toml/.yml file, even
+# inside comments; the patterns are RISKY_APPROVAL_PATTERNS in hol-guard's checks/security.py.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: hashgraph-online/ai-plugin-scanner-action@caba2e96aa8ad2feb6cf6fca52442b52e22e779f # v1.2.635
+        with:
+          plugin_dir: "."
+          min_score: 80
+          fail_on_severity: high
