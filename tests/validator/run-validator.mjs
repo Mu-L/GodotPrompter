@@ -34,7 +34,9 @@ function writeCardStub(dir, name, marker) {
 export const SKILL_BODY_FIRST_LINE = 10;
 
 // `crlf: true` writes every fixture file with CRLF endings, as a Windows checkout would.
-export function runValidator({ skillBody = '', referenceBody = null, crlf = false }) {
+// `files` maps repo-relative paths to contents for files outside the fixture skill.
+// `git: true` makes the fixture a git work tree (no commits), for rules that ask git which files exist.
+export function runValidator({ skillBody = '', referenceBody = null, crlf = false, files = {}, git = false }) {
   const dir = mkdtempSync(join(tmpdir(), 'gp-val-'));
   const skillDir = join(dir, 'skills', 'fixture-skill');
   mkdirSync(skillDir, { recursive: true });
@@ -60,6 +62,12 @@ export function runValidator({ skillBody = '', referenceBody = null, crlf = fals
       'See [Topic](references/topic.md).', '', skillBody, '', '## Checklist', '', '- [ ] done', '',
     ].join('\n'));
   }
+
+  for (const [rel, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    write(join(dir, rel), text);
+  }
+  if (git) execFileSync('git', ['init', '-q'], { cwd: dir });
 
   let stdout = '';
   let code = 0;

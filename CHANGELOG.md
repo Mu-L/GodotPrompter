@@ -25,6 +25,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   every push to `master` and every pull request. It fails below 80/100 or on any high finding.
   The repository scored 70 before these changes and scores 100 after them.
 
+### Added
+
+- **`scanner-risky-approval` validator rule.** An error, so it fails CI. The plugin scanner flags
+  a full-access sandbox mode, a never-ask approval policy, or a bypass approval mode written out in
+  any `.md`, `.json`, `.toml`, `.yml` or `.yaml` file, comments and prose included. That scan runs
+  only after a push, and `release.yml` does not wait for it, so a release could ship while it
+  failed. The rule finds the same matches before a push, with the file and line. It checks the
+  files the scanner would see: in a git work tree that means tracked files plus untracked files
+  that are not ignored, so local agent notes don't count. Its patterns and file selection were
+  checked against the scanner on the same sample files.
+
 ### Changed
 
 - **The release workflow runs on Node 26 instead of Node 20.** Node 20 reached end of life on

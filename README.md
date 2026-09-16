@@ -329,7 +329,7 @@ node scripts/validate-skills.mjs           # exit 1 on errors, 0 otherwise
 node scripts/validate-skills.mjs --json    # machine-readable for CI
 ```
 
-The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` and `agents/*.md` against these rules:
+The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` and `agents/*.md` against these rules. `scanner-risky-approval` covers the whole repository:
 
 | Rule | What it checks | Severity |
 |---|---|---|
@@ -347,6 +347,7 @@ The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` a
 | `card-oversized` | The card region is ≤ 3 KB — it is injected on every session start *and* every compaction | error |
 | `card-skill-missing` | Every skill named in `CARD_SPECS` exists, so deleting one fails CI instead of silently skipping its check | error |
 | `gdscript-nonexistent-api` | No GDScript code block in a `SKILL.md` or `references/*.md` uses an API already caught being invented: `Signal.any()` / `Signal.all()`, or the C#-only `ToSignal()`. Prose is not scanned. It is a denylist, so it cannot prove an API exists | error |
+| `scanner-risky-approval` | No `.md`, `.json`, `.toml`, `.yml` or `.yaml` file writes out a setting the plugin scanner in `plugin-scan.yml` flags: a full-access sandbox mode, a never-ask approval policy, or a bypass approval mode. Comments and prose count, as they do for the scanner. In a git work tree it checks the files a clone would hold (tracked, or untracked and not ignored) | error |
 
 Hook behaviour is covered separately by `npm run test:hooks` (22 cases), which also runs on release tags.
 

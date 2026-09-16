@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Validates skills/*/SKILL.md and agents/*.md for structure and resolvable cross-references,
-// plus C#-parity across skills/*/references/*.md.
-import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
+// plus C#-parity across skills/*/references/*.md, plus repo-wide text the plugin scanner flags.
+import { readdirSync, readFileSync, existsSync, statSync, lstatSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -471,6 +472,67 @@ if (existsSync(AGENTS_DIR)) {
     validateAgent(join(AGENTS_DIR, name));
   }
 }
+
+// Scanner-pattern rule (error — fails CI): .github/workflows/plugin-scan.yml runs the HOL
+// plugin-scanner, which marks a file as a risky approval or sandbox default whenever its text matches
+// one of these patterns, in comments and prose too (RISKY_APPROVAL_PATTERNS in hol-guard's
+// checks/security.py). That scan runs only after a push and release.yml does not wait for it, so this
+// rule finds the same matches first. The file set mirrors the scanner's: names ending in these
+// extensions, outside its excluded directories, symlinks skipped.
+const SCANNER_RISKY_PATTERNS = [
+  /danger-full-access/g,
+  /approval[_ -]?policy["']?\s*[:=]\s*["']never["']/gi,
+  /approvalMode["']?\s*[:=]\s*["']bypass["']/gi,
+];
+const SCANNER_EXTENSIONS = ['.json', '.md', '.yaml', '.yml', '.toml'];
+const SCANNER_EXCLUDED_DIRS = new Set(['node_modules', '.git', 'dist', '.next', 'coverage', '.turbo', '__pycache__', '.venv', 'venv']);
+
+function walkFiles(dir, prefix = '') {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Dirent reports a symlink as neither a directory nor a file, so symlinks drop out here.
+    if (entry.isDirectory() && !SCANNER_EXCLUDED_DIRS.has(entry.name)) {
+      files.push(...walkFiles(join(dir, entry.name), `${prefix}${entry.name}/`));
+    } else if (entry.isFile()) {
+      files.push(`${prefix}${entry.name}`);
+    }
+  }
+  return files;
+}
+
+// CI scans a fresh clone. In a git work tree, only files a clone would hold count: tracked files, plus
+// untracked ones that are not ignored, since a new file is usually validated before `git add`.
+// Ignored local files such as agent notes and settings.local.json never reach the scan. Outside a
+// work tree, walk the directory.
+function listScannerFiles() {
+  const git = spawnSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+    { cwd: ROOT, encoding: 'utf8' });
+  const paths = git.status === 0 ? git.stdout.split('\0').filter(Boolean) : walkFiles(ROOT);
+  return [...new Set(paths)].filter(rel =>
+    SCANNER_EXTENSIONS.some(ext => rel.endsWith(ext))
+    && !rel.split('/').slice(0, -1).some(dir => SCANNER_EXCLUDED_DIRS.has(dir)));
+}
+
+function validateScannerPatterns() {
+  for (const rel of listScannerFiles()) {
+    const path = join(ROOT, rel);
+    let content;
+    try {
+      if (!lstatSync(path).isFile()) continue;  // a symlink git tracks
+      content = readFileSync(path, 'utf8');
+    } catch {
+      continue;  // tracked by git but deleted from the work tree
+    }
+    for (const re of SCANNER_RISKY_PATTERNS) {
+      for (const hit of content.matchAll(re)) {
+        const line = content.slice(0, hit.index).split('\n').length;
+        record(errors, path, 'scanner-risky-approval',
+          `line ${line}: \`${hit[0].replace(/\s+/g, ' ')}\` — the plugin scanner flags this text even in a comment or prose; describe the setting instead of writing it out`);
+      }
+    }
+  }
+}
+validateScannerPatterns();
 
 if (jsonMode) {
   console.log(JSON.stringify({ errors, warnings, summary: { errors: errors.length, warnings: warnings.length } }, null, 2));
