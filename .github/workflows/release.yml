@@ -53,6 +53,9 @@ jobs:
       - name: Run validator tests
         run: npm run test:validator
 
+      - name: Run metadata checks
+        run: npm run test:metadata
+
       # Self-test: the fixtures under scripts/fixtures/ are deliberately broken (over budget,
       # bad frontmatter, broken cross-ref). If the validator ever stops catching them, its rules
       # have been silently disabled — fail loudly rather than pass a release that isn't checked.
