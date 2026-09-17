@@ -64,8 +64,9 @@ node scripts/validate-platform-metadata.mjs
 
 1. Verifies version consistency between the tag, `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.cursor-plugin/plugin.json`, and `plugin.json`
 2. Runs `validate-skills.mjs`
-3. Creates the GitHub release using the matching CHANGELOG section as the body
-4. Opens marketplace PRs against `skillsmith` and `godot-prompter-marketplace` (requires `MARKETPLACE_TOKEN` secret)
+3. Runs hook, validator, and metadata tests
+4. Creates the GitHub release using the matching CHANGELOG section as the body
+5. Opens marketplace PRs against `skillsmith` and `godot-prompter-marketplace` (requires `MARKETPLACE_TOKEN` secret)
 
 If `MARKETPLACE_TOKEN` is not set, the marketplace step logs a warning and is skipped — the release itself still succeeds. Bump the marketplaces manually per `CONTRIBUTING.md` in that case.
 

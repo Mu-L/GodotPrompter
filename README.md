@@ -355,7 +355,7 @@ The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` a
 | `gdscript-nonexistent-api` | No GDScript code block in a `SKILL.md` or `references/*.md` uses an API already caught being invented: `Signal.any()` / `Signal.all()`, or the C#-only `ToSignal()`. Prose is not scanned. It is a denylist, so it cannot prove an API exists | error |
 | `scanner-risky-approval` | No `.md`, `.json`, `.toml`, `.yml` or `.yaml` file writes out a setting the plugin scanner in `plugin-scan.yml` flags: a full-access sandbox mode, a never-ask approval policy, or a bypass approval mode. Comments and prose count, as they do for the scanner. In a git work tree it checks the files a clone would hold (tracked, or untracked and not ignored) | error |
 
-Hook behaviour is covered separately by `npm run test:hooks` (22 cases), which also runs on release tags. Metadata coverage now also includes `node scripts/sync-codex-agents.mjs --check`, `node scripts/generate-skill-index.mjs --check`, and `node scripts/validate-platform-metadata.mjs`.
+Hook behaviour is covered separately by `npm run test:hooks` (50 cases), which also runs on release tags. Metadata coverage now also includes `node scripts/sync-codex-agents.mjs --check`, `node scripts/generate-skill-index.mjs --check`, and `node scripts/validate-platform-metadata.mjs`.
 
 Token cost reporting:
 
@@ -365,9 +365,9 @@ node scripts/count-tokens.mjs --tokenizer --markdown
 
 Produces a per-skill / per-agent table (bytes, KB, estimated tokens, Claude / GPT tokenizer counts, status) that lives between `<!-- BEGIN-TOKEN-TABLE -->` markers in [`docs/token-budget.md`](docs/token-budget.md).
 
-CI gate: `.github/workflows/release.yml` runs both `node scripts/validate-skills.mjs` and a tag-vs-manifest version-consistency check on every `v*.*.*` push. The release is blocked if the validator returns errors or any of `package.json` / `.claude-plugin/plugin.json` / `.claude-plugin/marketplace.json` / `.cursor-plugin/plugin.json` / `plugin.json` drifts from the tag.
+CI gate: `.github/workflows/release.yml` runs the version-consistency check, `node scripts/validate-skills.mjs`, the hook tests, the validator tests, the metadata tests, and the broken-fixture self-test on every `v*.*.*` push. The release is blocked if any of those fail or any of `package.json` / `.claude-plugin/plugin.json` / `.claude-plugin/marketplace.json` / `.cursor-plugin/plugin.json` / `plugin.json` drifts from the tag.
 
-**Current baseline (v1.12.0):** 0 errors, 16 warnings (all `csharp-parity-accepted` for intentionally GDScript-only skills; 0 token-budget). Every `SKILL.md` is **under** the 16 KB budget — since v1.12.0 that is a validator **error**, not a warning, so an over-budget skill fails the release.
+**Current baseline:** 0 errors, 53 warnings on `node scripts/validate-skills.mjs` in this repository state. Most are intentional `csharp-parity-accepted` warnings for GDScript-only content; two are outstanding `csharp-parity-missing-reference` warnings in `skills/mobile-development/references/plugins.md`. Every `SKILL.md` is **under** the 16 KB budget — since v1.12.0 that is a validator **error**, not a warning, so an over-budget skill fails the release.
 
 A manual agent-integration test plan covering full workflows (skill discovery, cross-reference navigation, end-to-end feature implementation) lives in [`tests/agent-integration/TEST_PLAN.md`](tests/agent-integration/TEST_PLAN.md) for spot-checks against new agent versions or platforms. Cross-host release smoke coverage is tracked in [`tests/agent-integration/host-smoke-matrix.json`](tests/agent-integration/host-smoke-matrix.json).
 

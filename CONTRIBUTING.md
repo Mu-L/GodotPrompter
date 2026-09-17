@@ -143,6 +143,13 @@ model: inherit
 Agent system prompt goes here.
 ```
 
+Codex agent mirrors under `.codex/agents/godot-prompter/` are generated from these Markdown
+files. After editing any `agents/*.md`, run:
+
+```bash
+node scripts/sync-codex-agents.mjs --write
+```
+
 ## Releasing a New Version
 
 When publishing a new version (e.g., v1.8.1):
