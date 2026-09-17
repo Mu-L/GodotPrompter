@@ -73,6 +73,8 @@ copilot plugin marketplace add jame581/skillsmith
 copilot plugin install godot-prompter@skillsmith
 ```
 
+Detailed guide: [`docs/platforms/copilot-cli.md`](docs/platforms/copilot-cli.md)
+
 ### Cursor
 
 ```
@@ -80,6 +82,8 @@ copilot plugin install godot-prompter@skillsmith
 ```
 
 Or clone and place in your project — Cursor reads `.cursor-plugin/plugin.json`.
+
+Detailed guide: [`docs/platforms/cursor.md`](docs/platforms/cursor.md)
 
 ### Codex
 
@@ -188,16 +192,18 @@ GodotPrompter includes 9 specialized agents:
 
 ## Supported Platforms
 
-| Platform | Status | Install |
-|----------|--------|---------|
-| Claude Code | Primary | `claude plugins marketplace add jame581/skillsmith` |
-| Grok Build | Supported | `grok plugin install jame581/GodotPrompter --trust` |
-| Antigravity CLI (`agy`) | Supported | `agy plugin install https://github.com/jame581/GodotPrompter` |
-| GitHub Copilot CLI | Supported | `copilot plugin marketplace add jame581/skillsmith` |
-| Cursor | Supported | `/add-plugin godot-prompter` or clone with `.cursor-plugin/` |
-| Codex | Supported | Clone + symlink (see `.codex/INSTALL.md`) |
-| OpenCode | Supported | Add to `opencode.json` (see `.opencode/INSTALL.md`) |
-| Antigravity | Supported | Install via the Antigravity plugin marketplace |
+| Platform | Install | SessionStart hook | Fresh-context path | Status | Docs |
+|----------|---------|-------------------|--------------------|--------|------|
+| Claude Code | `claude plugins marketplace add jame581/skillsmith` | Yes | `CLAUDE.md` / `.claude/CLAUDE.md` | Primary, verified | This README + `tests/agent-integration/TEST_PLAN.md` |
+| GitHub Copilot CLI | `copilot plugin marketplace add jame581/skillsmith` | Yes | `.github/copilot-instructions.md` or `AGENTS.md` | Verified | [`docs/platforms/copilot-cli.md`](docs/platforms/copilot-cli.md) |
+| Cursor | `/add-plugin godot-prompter` or clone with `.cursor-plugin/` | Registration ships | `.cursor/rules/` or `AGENTS.md` | End-to-end install still pending confirmation | [`docs/platforms/cursor.md`](docs/platforms/cursor.md) |
+| Codex | Clone + symlink | No | `AGENTS.md` | Documented | [`.codex/INSTALL.md`](.codex/INSTALL.md) |
+| Antigravity | `agy plugin install https://github.com/jame581/GodotPrompter` | No | `GEMINI.md` | Documented | This README |
+| OpenCode | Add to `opencode.json` | No | `AGENTS.md` | Documented | [`.opencode/INSTALL.md`](.opencode/INSTALL.md) |
+| Grok Build | `grok plugin install jame581/GodotPrompter --trust` | Not documented | Not documented | Install path documented; smoke coverage still needed | This README |
+
+Machine-readable release smoke coverage lives in [`tests/agent-integration/host-smoke-matrix.json`](tests/agent-integration/host-smoke-matrix.json).
+The generated machine-readable skill catalog lives in [`skills/index.json`](skills/index.json).
 
 > **Legacy marketplace:** The [`godot-prompter-marketplace`](https://github.com/jame581/godot-prompter-marketplace) repo remains online so existing installs keep receiving updates, but new users should install from [`skillsmith`](https://github.com/jame581/skillsmith).
 
@@ -329,7 +335,7 @@ node scripts/validate-skills.mjs           # exit 1 on errors, 0 otherwise
 node scripts/validate-skills.mjs --json    # machine-readable for CI
 ```
 
-The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` and `agents/*.md` against these rules. `scanner-risky-approval` covers the whole repository:
+The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` and `agents/*.md` against these rules. `scanner-risky-approval` covers the whole repository. Additional metadata checks keep the generated Codex mirrors, the machine-readable skill index, and the cross-host smoke matrix current:
 
 | Rule | What it checks | Severity |
 |---|---|---|
@@ -349,7 +355,7 @@ The validator (`scripts/validate-skills.mjs`) checks every `skills/*/SKILL.md` a
 | `gdscript-nonexistent-api` | No GDScript code block in a `SKILL.md` or `references/*.md` uses an API already caught being invented: `Signal.any()` / `Signal.all()`, or the C#-only `ToSignal()`. Prose is not scanned. It is a denylist, so it cannot prove an API exists | error |
 | `scanner-risky-approval` | No `.md`, `.json`, `.toml`, `.yml` or `.yaml` file writes out a setting the plugin scanner in `plugin-scan.yml` flags: a full-access sandbox mode, a never-ask approval policy, or a bypass approval mode. Comments and prose count, as they do for the scanner. In a git work tree it checks the files a clone would hold (tracked, or untracked and not ignored) | error |
 
-Hook behaviour is covered separately by `npm run test:hooks` (22 cases), which also runs on release tags.
+Hook behaviour is covered separately by `npm run test:hooks` (22 cases), which also runs on release tags. Metadata coverage now also includes `node scripts/sync-codex-agents.mjs --check`, `node scripts/generate-skill-index.mjs --check`, and `node scripts/validate-platform-metadata.mjs`.
 
 Token cost reporting:
 
@@ -363,7 +369,7 @@ CI gate: `.github/workflows/release.yml` runs both `node scripts/validate-skills
 
 **Current baseline (v1.12.0):** 0 errors, 16 warnings (all `csharp-parity-accepted` for intentionally GDScript-only skills; 0 token-budget). Every `SKILL.md` is **under** the 16 KB budget — since v1.12.0 that is a validator **error**, not a warning, so an over-budget skill fails the release.
 
-A manual agent-integration test plan covering full workflows (skill discovery, cross-reference navigation, end-to-end feature implementation) lives in [`tests/agent-integration/TEST_PLAN.md`](tests/agent-integration/TEST_PLAN.md) for spot-checks against new agent versions or platforms.
+A manual agent-integration test plan covering full workflows (skill discovery, cross-reference navigation, end-to-end feature implementation) lives in [`tests/agent-integration/TEST_PLAN.md`](tests/agent-integration/TEST_PLAN.md) for spot-checks against new agent versions or platforms. Cross-host release smoke coverage is tracked in [`tests/agent-integration/host-smoke-matrix.json`](tests/agent-integration/host-smoke-matrix.json).
 
 ## Contributing
 

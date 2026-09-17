@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "hosts": [
+    {
+      "name": "Claude Code",
+      "install": "claude plugins marketplace add jame581/skillsmith && claude plugins install godot-prompter@skillsmith",
+      "instructionsPath": "CLAUDE.md or .claude/CLAUDE.md",
+      "status": "verified",
+      "verificationDoc": "tests/agent-integration/TEST_PLAN.md",
+      "discoverability": "installed plugin + SessionStart hook",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Cold-start skill discovery",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "Loads the bootstrap skill or equivalent catalog knowledge and names multiple real skills"
+        },
+        {
+          "id": "hook-godot-only",
+          "goal": "SessionStart routing card behavior",
+          "prompt": "Start a fresh session in a Godot project, then another in a non-Godot repo.",
+          "expected": "Routing card appears only in the Godot project"
+        },
+        {
+          "id": "post-release-discoverability",
+          "goal": "Installed-plugin discoverability for new skills",
+          "prompt": "After updating the installed plugin, ask for a newly-added skill by use case rather than by file name.",
+          "expected": "The agent routes to the newly released skill without manually reading the repo"
+        }
+      ]
+    },
+    {
+      "name": "GitHub Copilot CLI",
+      "install": "copilot plugin marketplace add jame581/skillsmith && copilot plugin install godot-prompter@skillsmith",
+      "instructionsPath": ".github/copilot-instructions.md or AGENTS.md",
+      "status": "verified",
+      "verificationDoc": "docs/platforms/copilot-cli.md",
+      "discoverability": "installed plugin + SDK-standard hook output",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Cold-start skill discovery",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "Catalog answer reflects the real skills, not generic Godot advice"
+        },
+        {
+          "id": "open-ended-routing",
+          "goal": "Skill routing from a user problem",
+          "prompt": "I need to add a state machine to my player character in Godot 4.",
+          "expected": "Routes to the state-machine skill"
+        },
+        {
+          "id": "post-release-discoverability",
+          "goal": "Installed-plugin discoverability after update",
+          "prompt": "After `copilot plugin update godot-prompter`, ask for a newly-added skill by problem description.",
+          "expected": "The installed plugin can route to the new skill without reading the working tree"
+        }
+      ]
+    },
+    {
+      "name": "Cursor",
+      "install": "/add-plugin godot-prompter or clone with .cursor-plugin/plugin.json",
+      "instructionsPath": ".cursor/rules/ or AGENTS.md",
+      "status": "registration ships; end-to-end still pending",
+      "verificationDoc": "docs/platforms/cursor.md",
+      "discoverability": "plugin registration + manual smoke required",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Cold-start skill discovery",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "Lists the real skill catalog"
+        },
+        {
+          "id": "routing",
+          "goal": "Open-ended routing",
+          "prompt": "I want enemies that patrol waypoints and chase the player when they get close.",
+          "expected": "Routes to ai-navigation"
+        },
+        {
+          "id": "post-release-discoverability",
+          "goal": "Installed-plugin discoverability after release",
+          "prompt": "After the plugin updates, ask for a newly-added skill by use case.",
+          "expected": "Confirms whether installed-plugin routing is now verified end to end"
+        }
+      ]
+    },
+    {
+      "name": "Codex",
+      "install": "Clone to ~/.codex/godot-prompter and symlink skills into ~/.agents/skills/godot-prompter",
+      "instructionsPath": "AGENTS.md",
+      "status": "documented",
+      "verificationDoc": ".codex/INSTALL.md",
+      "discoverability": "native skill discovery + AGENTS.md",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Skill discovery after restart",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "The restarted CLI sees the skills through native discovery"
+        },
+        {
+          "id": "agent-routing",
+          "goal": "Specialized agent availability",
+          "prompt": "Design an enemy AI system with patrol, chase, and attack behaviors.",
+          "expected": "The godot-game-architect agent is available and grounded in repo content"
+        }
+      ]
+    },
+    {
+      "name": "Antigravity",
+      "install": "agy plugin install https://github.com/jame581/GodotPrompter",
+      "instructionsPath": "GEMINI.md",
+      "status": "documented",
+      "verificationDoc": "README.md",
+      "discoverability": "automatic activation by skill description",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Skill catalog availability",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "Catalog reflects the published skills"
+        },
+        {
+          "id": "description-routing",
+          "goal": "Description-based activation",
+          "prompt": "I need a save/load system for my Godot game.",
+          "expected": "The save-load skill activates from the prompt match"
+        }
+      ]
+    },
+    {
+      "name": "OpenCode",
+      "install": "Add godot-prompter@git+https://github.com/jame581/GodotPrompter.git to opencode.json",
+      "instructionsPath": "AGENTS.md",
+      "status": "documented",
+      "verificationDoc": ".opencode/INSTALL.md",
+      "discoverability": "native skill tool + config-based install",
+      "checks": [
+        {
+          "id": "skills-menu",
+          "goal": "Native skill listing",
+          "prompt": "Use `/skills` after restart.",
+          "expected": "GodotPrompter skills appear in the menu"
+        },
+        {
+          "id": "direct-skill-use",
+          "goal": "Direct invocation",
+          "prompt": "Run `/godot-code-review main.gd` in a sample project.",
+          "expected": "The skill resolves without manual repo navigation"
+        }
+      ]
+    },
+    {
+      "name": "Grok Build",
+      "install": "grok plugin install jame581/GodotPrompter --trust && grok plugin enable godot-prompter",
+      "instructionsPath": "Project instructions file behavior not yet documented",
+      "status": "install path documented",
+      "verificationDoc": "README.md",
+      "discoverability": "release smoke coverage needed",
+      "checks": [
+        {
+          "id": "catalog",
+          "goal": "Basic install smoke test",
+          "prompt": "What Godot skills are available from GodotPrompter?",
+          "expected": "The plugin loads and lists the real catalog"
+        },
+        {
+          "id": "open-ended-routing",
+          "goal": "Routing from a real use case",
+          "prompt": "Set up a new Godot 4.3 project. How should I organize it?",
+          "expected": "Routes to godot-project-setup"
+        }
+      ]
+    }
+  ]
+}

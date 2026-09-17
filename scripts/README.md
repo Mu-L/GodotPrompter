@@ -30,6 +30,34 @@ node scripts/bump-version.mjs 1.5.0
 
 Verifies current versions match before bumping; errors out on drift.
 
+## sync-codex-agents.mjs
+
+Regenerates `.codex/agents/godot-prompter/*.toml` from the canonical Markdown agent sources in
+`agents/*.md`, or checks that the mirrors are current.
+
+```bash
+node scripts/sync-codex-agents.mjs --write
+node scripts/sync-codex-agents.mjs --check
+```
+
+## generate-skill-index.mjs
+
+Builds the machine-readable skill and agent catalog at `skills/index.json`.
+
+```bash
+node scripts/generate-skill-index.mjs --write
+node scripts/generate-skill-index.mjs --check
+```
+
+## validate-platform-metadata.mjs
+
+Checks that `tests/agent-integration/host-smoke-matrix.json` covers every supported host and only
+references files that exist.
+
+```bash
+node scripts/validate-platform-metadata.mjs
+```
+
 ## Release workflow
 
 `.github/workflows/release.yml` runs automatically on tag pushes matching `v*.*.*`. It:
