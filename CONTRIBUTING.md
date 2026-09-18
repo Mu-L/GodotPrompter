@@ -126,6 +126,7 @@ Before submitting:
 4. **Verify cross-refs** — Referenced skills must exist
 5. **Run the validator** — `node scripts/validate-skills.mjs` must report **0 errors** (it checks
    frontmatter, cross-references, the token budget, and orphaned reference files)
+6. **Refresh generated metadata when applicable** — run `node scripts/sync-codex-agents.mjs --write` after agent changes and `node scripts/generate-skill-index.mjs --write` after skill or agent catalog changes
 
 ## Adding Agents
 
@@ -140,6 +141,13 @@ model: inherit
 ---
 
 Agent system prompt goes here.
+```
+
+Codex agent mirrors under `.codex/agents/godot-prompter/` are generated from these Markdown
+files. After editing any `agents/*.md`, run:
+
+```bash
+node scripts/sync-codex-agents.mjs --write
 ```
 
 ## Releasing a New Version
@@ -174,7 +182,7 @@ When publishing a new version (e.g., v1.8.1):
 5. **Validate skills and hooks** — both run in CI on the release tag, so failing here fails the release:
    ```bash
    node scripts/validate-skills.mjs   # must report 0 errors
-   npm test                           # hooks + validator, must be all-pass
+   npm test                           # hooks + validator + metadata checks, must be all-pass
    ```
    If you touched `hooks/`, also confirm the scripts are still tracked executable and LF-pinned —
    `chmod +x` alone is a no-op in this repo because `core.filemode=false`:

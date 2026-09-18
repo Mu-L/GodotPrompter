@@ -1,7 +1,7 @@
 # GodotPrompter Agent Integration Test Plan
 
 Run these tests in a **fresh Claude Code session** with GodotPrompter installed.
-Record results in `RESULTS.md` after each test.
+Record results in `RESULTS.md` after each test. For cross-host release smoke coverage, also consult `host-smoke-matrix.json`.
 
 ---
 
@@ -284,6 +284,8 @@ sits next to) and answers with the addon's real API.
 ---
 
 ## How to Run
+
+Use `host-smoke-matrix.json` as the machine-readable release checklist for Claude Code, GitHub Copilot CLI, Cursor, Codex, Antigravity, OpenCode, and Grok Build. The numbered steps below remain the detailed Claude-first workflow.
 
 1. Start a fresh Claude Code session
 2. Install GodotPrompter: `claude plugins add ./GodotPrompter`
