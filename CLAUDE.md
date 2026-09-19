@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a **documentation/skills repository**. There is no application build/lint, but `node scripts/validate-skills.mjs` checks SKILL.md frontmatter, cross-references, and structure — it runs in CI on every release tag. Otherwise, changes are validated by reading skills, verifying code examples in Godot 4.3+, and running the agent integration tests in `tests/agent-integration/TEST_PLAN.md`.
+This is a **documentation/skills repository**. There is no application build/lint, but `node scripts/validate-skills.mjs` checks SKILL.md frontmatter, cross-references, and structure — `validate.yml` runs it plus `npm test` on every PR and push to `master`, and `release.yml` again on the tag. Otherwise, changes are validated by reading skills, verifying code examples in Godot 4.3+, and running the agent integration tests in `tests/agent-integration/TEST_PLAN.md`.
 
 ## Supported Platforms
 
@@ -32,7 +32,7 @@ The layout is self-evident from `ls`; these constraints are not:
 - **The hook does not reach subagents.** `SessionStart` fires on startup/resume/clear/compact only. A `## GodotPrompter` section in the project's agent instructions file is what subagents read. The offer to add one probes every file a supported host loads (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.github/copilot-instructions.md`, the rules directories) and is suppressed for good by `"section_offer": "declined"` in the project's `~/.godot-prompter/state/` file — probing one filename nagged agent-agnostic repos forever (#15). The probe is deliberately host-agnostic: a section in *any* of those files silences the offer on *every* host, trading a subagent that may stay uninstructed on a host that does not read that file against nagging a repo that has already documented the rule.
 - **Hook changes require `npm run test:hooks`.** `node --test tests/hooks/` does *not* work on Node 24 or later (still true on 26, which CI uses) — a directory argument is imported as a module.
 - **`AGENTS.md` / `GEMINI.md`** are root @-imports that re-export `using-godot-prompter` for Codex and Antigravity — edit the skill, not these.
-- **Agents are mirrored, not shared.** Each `agents/<name>.md` has a hand-maintained twin at `.codex/agents/godot-prompter/<name>.toml`. The validator walks `agents/*.md` only, so drift is silent — edit both.
+- **Two files are generated — never hand-edit them.** `.codex/agents/godot-prompter/*.toml` comes from `agents/*.md` (`npm run sync:codex-agents`); `skills/index.json` comes from skill/agent frontmatter and Related-skills lines (`npm run build:skill-index`). `npm test` fails if either is stale.
 - **`.github/workflows/release.yml`** is tag-triggered: it validates, creates the GitHub release, and opens marketplace PRs.
 - **`.github/workflows/plugin-scan.yml`** runs the HOL plugin-scanner (the awesome-ai-plugins listing check) on every push to `master` and every PR, and fails below 80/100. It flags a full-access sandbox mode, a never-ask approval policy, or a bypass approval mode written literally in any `.md`/`.json`/`.toml`/`.yml`/`.yaml` file, comments and this file included (patterns: `RISKY_APPROVAL_PATTERNS` in hol-guard's `checks/security.py`), so describe them rather than quoting them. The validator's `scanner-risky-approval` error catches the same text before a push. Every `uses:` must be pinned to a full commit SHA — Dependabot keeps the pins current.
 - **`docs/superpowers/notes/`** holds per-release research notes and the C# parity debt list.
@@ -51,4 +51,4 @@ Before merging skill changes:
 
 `node scripts/validate-skills.mjs` already enforces frontmatter, cross-references, the size budget, and C# parity — run it rather than checking those by hand. For parity exemptions (`csharp-parity: n/a` markers) see **authoring-godot-prompter-skills**.
 
-Run `npm test` (hooks + validator) after touching `scripts/validate-skills.mjs` — `tests/validator/` covers the parity marker, including the error path that can fail a release tag.
+Run `npm test` (hooks + validator + generated-metadata checks) after touching `scripts/validate-skills.mjs` — `tests/validator/` covers the parity marker, including the error path that can fail a release tag.
