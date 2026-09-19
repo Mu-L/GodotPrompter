@@ -10,10 +10,12 @@ Full command sequence lives in `CONTRIBUTING.md`.
 
 ## Sequence
 
-1. `node scripts/bump-version.mjs <version>` — bumps `package.json`,
-   `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, plus sibling
-   marketplaces if present; also syncs the live skill count into the
-   "N domain-specific skills" text of each manifest description.
+1. `node scripts/bump-version.mjs <version>` — bumps all **five** files
+   `release.yml` verifies (`package.json`, the root `plugin.json` (Antigravity),
+   `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+   `.cursor-plugin/plugin.json`), both version fields in the committed
+   `package-lock.json`, plus sibling marketplaces if present; also syncs the live
+   skill count into the "N domain-specific skills" text of each manifest description.
 2. Update `CHANGELOG.md` with the new section.
 3. Commit, tag (`v<version>`), push with tags — `.github/workflows/release.yml`
    then validates, creates the GitHub release, and opens marketplace PRs
